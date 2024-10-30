@@ -24,14 +24,31 @@ class GameDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         onCreate(db)
     }
 
-    // Insertar un nuevo puntaje
+    // Insertar un nuevo puntaje y mantener solo los 5 mejores
     fun insertScore(points: Int) {
         val db = writableDatabase
         val values = ContentValues().apply {
             put(COLUMN_POINTS, points)
         }
         db.insert(TABLE_NAME, null, values)
+
+        // Llama a la función para eliminar puntajes extras y asegurar que solo queden los 5 mejores
+        deleteExtraScores(db)
         db.close()
+    }
+
+    // Elimina los puntajes adicionales, manteniendo solo los 5 mejores
+    private fun deleteExtraScores(db: SQLiteDatabase) {
+        val excessScoresQuery = """
+        DELETE FROM $TABLE_NAME 
+        WHERE $COLUMN_ID NOT IN (
+            SELECT $COLUMN_ID 
+            FROM $TABLE_NAME 
+            ORDER BY $COLUMN_POINTS DESC 
+            LIMIT 5
+        )
+    """.trimIndent()
+        db.execSQL(excessScoresQuery)
     }
 
     // Obtener los 5 mejores puntajes

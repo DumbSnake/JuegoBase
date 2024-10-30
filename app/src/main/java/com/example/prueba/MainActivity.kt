@@ -14,10 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -66,6 +68,10 @@ fun GameScreen(modifier: Modifier = Modifier) {
     var obstacleWidth = obstacleImage.width * 0.7f
     var obstacleHeight = obstacleImage.height * 0.7f
 
+    // Variables para el tamaño de la pantalla
+    var screenWidth by remember { mutableStateOf(0f) }
+    var screenHeight by remember { mutableStateOf(0f) }
+
     // Cargar puntajes al iniciar el juego
     LaunchedEffect(Unit) {
         highScores = db.getTopScores()  // Obtener los 5 puntajes más altos
@@ -76,18 +82,22 @@ fun GameScreen(modifier: Modifier = Modifier) {
             delay(16L)
             velocity += 0.5f
             birdY += velocity
+
+            // Limita la posición del pájaro entre el límite superior e inferior de la pantalla
+            birdY = birdY.coerceIn(0f, screenHeight - birdHeight)
+
             obstacleX -= 5f
             score += 1
 
             // Reiniciar obstáculo cuando sale de la pantalla
             if (obstacleX < -obstacleWidth) {
-                obstacleX = 1000f
+                obstacleX = screenWidth  // Usa el ancho de pantalla capturado
 
                 // Alterna entre obstáculo superior e inferior y aleatoriza su tamaño
                 if (Math.random() < 0.5) {
                     obstacleY = 0f  // Obstáculo en la parte superior
                 } else {
-                    obstacleY = this.size.height - obstacleHeight  // Obstáculo en la parte inferior
+                    obstacleY = screenHeight - obstacleHeight  // Obstáculo en la parte inferior
                 }
                 obstacleHeight = (100..300).random().toFloat()  // Tamaño aleatorio
             }
@@ -98,6 +108,10 @@ fun GameScreen(modifier: Modifier = Modifier) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                .onSizeChanged { size ->
+                    screenWidth = size.width.toFloat()
+                    screenHeight = size.height.toFloat()
+                }
                 .pointerInput(Unit) {
                     detectTapGestures {
                         velocity = -10f
@@ -106,21 +120,20 @@ fun GameScreen(modifier: Modifier = Modifier) {
         ) {
             // Asigna el valor inicial de birdX solo una vez
             if (birdX == 0f) {
-                birdX = size.width / 2 - birdWidth / 2
+                birdX = screenWidth / 2 - birdWidth / 2
             }
 
             // Dibujar personaje con hitbox ajustada
             drawImage(
                 image = birdImage,
-                topLeft = Offset(x = birdX, y = birdY - birdHeight / 2)
+                topLeft = Offset(x = birdX, y = birdY)
             )
 
-
-            // Dibuja la hitbox del pájaro con dimensiones reducidas
+            // Dibuja la hitbox del pájaro con dimensiones ajustadas
             drawRect(
                 color = androidx.compose.ui.graphics.Color.Red,
-                topLeft = Offset(birdX + birdWidth * 0.2f, birdY - birdHeight * 0.4f),
-                size = androidx.compose.ui.geometry.Size(birdWidth * 0.6f, birdHeight * 0.6f)
+                topLeft = Offset(birdX, birdY),
+                size = Size(birdWidth, birdHeight)
             )
 
             // Dibujar obstáculo con hitbox ajustada
@@ -129,23 +142,22 @@ fun GameScreen(modifier: Modifier = Modifier) {
                 topLeft = Offset(x = obstacleX, y = obstacleY)
             )
 
-
-            // Dibuja la hitbox del obstáculo con dimensiones reducidas
+            // Dibuja la hitbox del obstáculo alineada con la imagen
             drawRect(
                 color = androidx.compose.ui.graphics.Color.Blue,
-                topLeft = Offset(obstacleX + obstacleWidth * 0.2f, obstacleY),
-                size = androidx.compose.ui.geometry.Size(obstacleWidth * 0.6f, obstacleHeight)
+                topLeft = Offset(obstacleX, obstacleY),
+                size = Size(obstacleWidth, obstacleHeight)
             )
 
             // Check de colisión con hitboxes
             if (checkCollision(
-                    birdX = birdX + birdWidth * 0.2f,
-                    birdY = birdY - birdHeight * 0.4f,
-                    birdWidth = birdWidth * 0.6f,
-                    birdHeight = birdHeight * 0.6f,
-                    obstacleX = obstacleX + obstacleWidth * 0.2f,
+                    birdX = birdX,
+                    birdY = birdY,
+                    birdWidth = birdWidth,
+                    birdHeight = birdHeight,
+                    obstacleX = obstacleX,
                     obstacleY = obstacleY,
-                    obstacleWidth = obstacleWidth * 0.6f,
+                    obstacleWidth = obstacleWidth,
                     obstacleHeight = obstacleHeight
                 )
             ) {
@@ -157,8 +169,8 @@ fun GameScreen(modifier: Modifier = Modifier) {
             if (isGameOver) {
                 drawContext.canvas.nativeCanvas.drawText(
                     "Game Over",
-                    size.width / 2,
-                    size.height / 2,
+                    screenWidth / 2,
+                    screenHeight / 2,
                     android.graphics.Paint().apply {
                         textAlign = android.graphics.Paint.Align.CENTER
                         textSize = 64f
@@ -193,7 +205,7 @@ fun GameScreen(modifier: Modifier = Modifier) {
                 onClick = {
                     birdY = 0f
                     velocity = 0f
-                    obstacleX = 1000f
+                    obstacleX = screenWidth
                     score = 0
                     isGameOver = false
                 },
@@ -204,7 +216,6 @@ fun GameScreen(modifier: Modifier = Modifier) {
         }
     }
 }
-
 
 // Función para verificar colisión de hitboxes
 fun checkCollision(
@@ -222,7 +233,6 @@ fun checkCollision(
             birdY < obstacleY + obstacleHeight &&
             birdY + birdHeight > obstacleY
 }
-
 
 @Preview(showBackground = true)
 @Composable
