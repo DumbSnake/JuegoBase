@@ -45,34 +45,51 @@ fun GameScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val db = remember { GameDatabase(context) }
 
+    // Variables del juego
     var birdY by remember { mutableStateOf(0f) }
+    var birdX by remember { mutableStateOf(0f) }
     var velocity by remember { mutableStateOf(0f) }
     var obstacleX by remember { mutableStateOf(1000f) }
+    var obstacleY by remember { mutableStateOf(0f) }
     var isGameOver by remember { mutableStateOf(false) }
     var score by remember { mutableStateOf(0) }
-    var scoreList by remember { mutableStateOf(emptyList<Int>()) }
 
     val birdImage = ImageBitmap.imageResource(id = R.drawable.boy)
-    val obstacleImage = ImageBitmap.imageResource(id = R.drawable.edificio)
+    val obstacleImage = ImageBitmap.imageResource(id = R.drawable.pngegg)
+
+    // Puntajes altos inicializados
+    var highScores by remember { mutableStateOf(listOf<Int>()) }
+
+    // Dimensiones ajustadas del pájaro y del obstáculo
+    val birdWidth = birdImage.width * 0.5f
+    val birdHeight = birdImage.height * 0.5f
+    var obstacleWidth = obstacleImage.width * 0.7f
+    var obstacleHeight = obstacleImage.height * 0.7f
+
+    // Cargar puntajes al iniciar el juego
+    LaunchedEffect(Unit) {
+        highScores = db.getTopScores()  // Obtener los 5 puntajes más altos
+    }
 
     LaunchedEffect(isGameOver) {
-        if (!isGameOver) {
-            while (!isGameOver) {
-                delay(16L)
-                velocity += 0.5f
-                birdY += velocity
-                obstacleX -= 5f
-                score += 1
+        while (!isGameOver) {
+            delay(16L)
+            velocity += 0.5f
+            birdY += velocity
+            obstacleX -= 5f
+            score += 1
 
-                if (obstacleX < 0) {
-                    obstacleX = 1000f
-                }
+            // Reiniciar obstáculo cuando sale de la pantalla
+            if (obstacleX < -obstacleWidth) {
+                obstacleX = 1000f
 
-                if (birdY > 1000f || birdY < 0f || (obstacleX in 450f..550f && birdY in 300f..700f)) {
-                    isGameOver = true
-                    db.insertScore(score)
-                    scoreList = db.getAllScores()
+                // Alterna entre obstáculo superior e inferior y aleatoriza su tamaño
+                if (Math.random() < 0.5) {
+                    obstacleY = 0f  // Obstáculo en la parte superior
+                } else {
+                    obstacleY = this.size.height - obstacleHeight  // Obstáculo en la parte inferior
                 }
+                obstacleHeight = (100..300).random().toFloat()  // Tamaño aleatorio
             }
         }
     }
@@ -87,14 +104,56 @@ fun GameScreen(modifier: Modifier = Modifier) {
                     }
                 }
         ) {
+            // Asigna el valor inicial de birdX solo una vez
+            if (birdX == 0f) {
+                birdX = size.width / 2 - birdWidth / 2
+            }
+
+            // Dibujar personaje con hitbox ajustada
             drawImage(
                 image = birdImage,
-                topLeft = Offset(x = size.width / 2 - birdImage.width / 2, y = birdY - birdImage.height / 2)
+                topLeft = Offset(x = birdX, y = birdY - birdHeight / 2)
             )
+
+
+            // Dibuja la hitbox del pájaro con dimensiones reducidas
+            drawRect(
+                color = androidx.compose.ui.graphics.Color.Red,
+                topLeft = Offset(birdX + birdWidth * 0.2f, birdY - birdHeight * 0.4f),
+                size = androidx.compose.ui.geometry.Size(birdWidth * 0.6f, birdHeight * 0.6f)
+            )
+
+            // Dibujar obstáculo con hitbox ajustada
             drawImage(
                 image = obstacleImage,
-                topLeft = Offset(x = obstacleX, y = 300f)
+                topLeft = Offset(x = obstacleX, y = obstacleY)
             )
+
+
+            // Dibuja la hitbox del obstáculo con dimensiones reducidas
+            drawRect(
+                color = androidx.compose.ui.graphics.Color.Blue,
+                topLeft = Offset(obstacleX + obstacleWidth * 0.2f, obstacleY),
+                size = androidx.compose.ui.geometry.Size(obstacleWidth * 0.6f, obstacleHeight)
+            )
+
+            // Check de colisión con hitboxes
+            if (checkCollision(
+                    birdX = birdX + birdWidth * 0.2f,
+                    birdY = birdY - birdHeight * 0.4f,
+                    birdWidth = birdWidth * 0.6f,
+                    birdHeight = birdHeight * 0.6f,
+                    obstacleX = obstacleX + obstacleWidth * 0.2f,
+                    obstacleY = obstacleY,
+                    obstacleWidth = obstacleWidth * 0.6f,
+                    obstacleHeight = obstacleHeight
+                )
+            ) {
+                isGameOver = true
+                db.insertScore(score)  // Guarda el puntaje al finalizar
+                highScores = db.getTopScores()  // Actualiza la lista de los 5 puntajes más altos
+            }
+
             if (isGameOver) {
                 drawContext.canvas.nativeCanvas.drawText(
                     "Game Over",
@@ -109,39 +168,61 @@ fun GameScreen(modifier: Modifier = Modifier) {
             }
         }
 
+        // Mostrar puntaje actual
         Text(
             text = "Puntaje: $score",
-            fontSize = 24.sp,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 16.dp)
+                .padding(16.dp)
         )
 
+        // Mostrar los 5 mejores puntajes al finalizar el juego
         if (isGameOver) {
             Column(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .padding(top = 100.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(top = 150.dp)
             ) {
-                Text("Puntajes Anteriores:", fontSize = 20.sp)
-                scoreList.forEachIndexed { index, score ->
-                    Text(text = "${index + 1}. $score", fontSize = 16.sp)
+                Text("Top 5 Puntajes:", modifier = Modifier.padding(8.dp))
+                highScores.forEach { highScore ->
+                    Text(text = "$highScore", modifier = Modifier.padding(4.dp))
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = {
+            }
+
+            Button(
+                onClick = {
                     birdY = 0f
                     velocity = 0f
                     obstacleX = 1000f
                     score = 0
                     isGameOver = false
-                }) {
-                    Text("Reintentar")
-                }
+                },
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Text("Reintentar")
             }
         }
     }
 }
+
+
+// Función para verificar colisión de hitboxes
+fun checkCollision(
+    birdX: Float,
+    birdY: Float,
+    birdWidth: Float,
+    birdHeight: Float,
+    obstacleX: Float,
+    obstacleY: Float,
+    obstacleWidth: Float,
+    obstacleHeight: Float
+): Boolean {
+    return birdX < obstacleX + obstacleWidth &&
+            birdX + birdWidth > obstacleX &&
+            birdY < obstacleY + obstacleHeight &&
+            birdY + birdHeight > obstacleY
+}
+
 
 @Preview(showBackground = true)
 @Composable

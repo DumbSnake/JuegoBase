@@ -6,7 +6,6 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 // Clase para manejar la base de datos
-// Clase para manejar la base de datos
 class GameDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -35,11 +34,17 @@ class GameDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         db.close()
     }
 
-    // Obtener todos los puntajes
-    fun getAllScores(): List<Int> {
+    // Obtener los 5 mejores puntajes
+    fun getTopScores(limit: Int = 5): List<Int> {
         val scores = mutableListOf<Int>()
         val db = readableDatabase
-        val cursor = db.query(TABLE_NAME, arrayOf(COLUMN_POINTS), null, null, null, null, "$COLUMN_TIMESTAMP DESC")
+        val cursor = db.query(
+            TABLE_NAME,
+            arrayOf(COLUMN_POINTS),
+            null, null, null, null,
+            "$COLUMN_POINTS DESC",  // Ordena los puntajes de mayor a menor
+            "$limit"                // Limita a los 5 primeros resultados
+        )
 
         cursor.use {
             while (it.moveToNext()) {
