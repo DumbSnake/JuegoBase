@@ -1,5 +1,6 @@
 package com.example.prueba
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
@@ -8,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
@@ -16,8 +18,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.nativeCanvas
@@ -25,6 +29,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -110,10 +115,10 @@ fun GameScreen(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize()) {
 
         Image(
-            painter = painterResource(id = R.drawable.fondox), // Asegúrate de que fondox está en drawable
+            painter = painterResource(id = R.drawable.fondox),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop // Ajusta la imagen para llenar el fondo
+            contentScale = ContentScale.Crop
         )
 
         Canvas(
@@ -194,16 +199,22 @@ fun GameScreen(modifier: Modifier = Modifier) {
         // Mostrar puntaje actual
         Text(
             text = "Puntaje: $score",
+            color = Color.White, // Cambia el color del texto
+            fontSize = 20.sp, // Tamaño de fuente más grande
+            fontWeight = FontWeight.Bold, // Texto en negrita
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(16.dp)
+                .shadow(4.dp, RoundedCornerShape(8.dp)) // Sombra para destacar el texto
+                .background(color = Color(0xFF6200EE), shape = RoundedCornerShape(8.dp)) // Fondo morado con esquinas redondeadas
+                .padding(horizontal = 16.dp, vertical = 8.dp) // Espacio interno
         )
 
         // Mostrar los 5 mejores puntajes al finalizar el juego
         if (isGameOver) {
             Column(
                 modifier = Modifier
-                    .align(Alignment.Center)
+                    .align(Alignment.CenterStart)
                     .padding(top = 150.dp)
             ) {
                 Text("Top 5 Puntajes:", modifier = Modifier.padding(8.dp))
