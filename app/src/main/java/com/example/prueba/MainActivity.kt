@@ -1,5 +1,8 @@
 package com.example.prueba
 
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -105,6 +108,14 @@ fun GameScreen(modifier: Modifier = Modifier) {
     }
 
     Box(modifier = modifier.fillMaxSize()) {
+
+        Image(
+            painter = painterResource(id = R.drawable.fondox), // Asegúrate de que fondox está en drawable
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop // Ajusta la imagen para llenar el fondo
+        )
+
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
