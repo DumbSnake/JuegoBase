@@ -18,9 +18,11 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.prueba.ui.theme.PruebaTheme
 import kotlinx.coroutines.delay
 
@@ -40,62 +42,59 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun GameScreen(modifier: Modifier = Modifier) {
-    // Variables del juego
-    var catY by remember { mutableStateOf(0f) }  // Posición del pájaro en el eje Y
-    var velocity by remember { mutableStateOf(0f) }  // Velocidad del pájaro
-    var obstacleX by remember { mutableStateOf(1000f) }  // Posición del obstáculo en X
-    var isGameOver by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val db = remember { GameDatabase(context) }
 
-    // Cargar imágenes
-    val catImage = ImageBitmap.imageResource(id = R.drawable.boy)
+    var birdY by remember { mutableStateOf(0f) }
+    var velocity by remember { mutableStateOf(0f) }
+    var obstacleX by remember { mutableStateOf(1000f) }
+    var isGameOver by remember { mutableStateOf(false) }
+    var score by remember { mutableStateOf(0) }
+    var scoreList by remember { mutableStateOf(emptyList<Int>()) }
+
+    val birdImage = ImageBitmap.imageResource(id = R.drawable.boy)
     val obstacleImage = ImageBitmap.imageResource(id = R.drawable.edificio)
 
-    // Dependiendo de `isGameOver`, reinicia el ciclo del juego cuando se cambia a `false`
     LaunchedEffect(isGameOver) {
-        // Solo ejecuta el ciclo si el juego no ha terminado
-        while (!isGameOver) {
-            delay(16L)  // 60 FPS (aproximadamente)
-            velocity += 0.5f  // Gravedad que afecta al pájaro
-            catY += velocity
-            obstacleX -= 5f  // Movimiento de los obstáculos hacia la izquierda
+        if (!isGameOver) {
+            while (!isGameOver) {
+                delay(16L)
+                velocity += 0.5f
+                birdY += velocity
+                obstacleX -= 5f
+                score += 1
 
-            // Reinicia la posición del obstáculo cuando sale de la pantalla
-            if (obstacleX < 0) {
-                obstacleX = 1000f
-            }
+                if (obstacleX < 0) {
+                    obstacleX = 1000f
+                }
 
-            // Verificar colisión del pájaro con el suelo o los obstáculos (simplificada)
-            if (catY > 1000f || catY < 0f || (obstacleX in 450f..550f && catY in 300f..700f)) {
-                isGameOver = true
+                if (birdY > 1000f || birdY < 0f || (obstacleX in 450f..550f && birdY in 300f..700f)) {
+                    isGameOver = true
+                    db.insertScore(score)
+                    scoreList = db.getAllScores()
+                }
             }
         }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Dibujar elementos del juego
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTapGestures {
-                        // Al tocar la pantalla, el pájaro salta
                         velocity = -10f
                     }
                 }
         ) {
-            // Dibuja el pájaro usando la imagen en lugar del círculo rojo
             drawImage(
-                image = catImage,
-                topLeft = Offset(x = size.width / 2 - catImage.width / 2, y = catY - catImage.height / 2)
+                image = birdImage,
+                topLeft = Offset(x = size.width / 2 - birdImage.width / 2, y = birdY - birdImage.height / 2)
             )
-
-            // Dibuja el obstáculo usando la imagen en lugar del rectángulo verde
             drawImage(
                 image = obstacleImage,
                 topLeft = Offset(x = obstacleX, y = 300f)
             )
-
-            // Si el juego termina, dibuja el mensaje de "Game Over"
             if (isGameOver) {
                 drawContext.canvas.nativeCanvas.drawText(
                     "Game Over",
@@ -110,21 +109,35 @@ fun GameScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // Botón de reintentar, que aparece solo cuando el juego ha terminado
+        Text(
+            text = "Puntaje: $score",
+            fontSize = 24.sp,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 16.dp)
+        )
+
         if (isGameOver) {
-            Button(
-                onClick = {
-                    // Reinicia las variables del juego
-                    catY = 0f
-                    velocity = 0f
-                    obstacleX = 1000f
-                    isGameOver = false
-                },
+            Column(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .padding(top = 100.dp)
+                    .padding(top = 100.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Reintentar")
+                Text("Puntajes Anteriores:", fontSize = 20.sp)
+                scoreList.forEachIndexed { index, score ->
+                    Text(text = "${index + 1}. $score", fontSize = 16.sp)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    birdY = 0f
+                    velocity = 0f
+                    obstacleX = 1000f
+                    score = 0
+                    isGameOver = false
+                }) {
+                    Text("Reintentar")
+                }
             }
         }
     }
