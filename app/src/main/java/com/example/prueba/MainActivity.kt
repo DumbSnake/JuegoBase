@@ -215,11 +215,26 @@ fun GameScreen(modifier: Modifier = Modifier) {
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(top = 150.dp)
+                    .padding(16.dp)
+                    .shadow(4.dp, RoundedCornerShape(8.dp)) // Sombra
+                    .background(color = Color(0xFF6200EE), shape = RoundedCornerShape(8.dp)) // Fondo morado con esquinas redondeadas
+                    .padding(16.dp) // Espacio interno alrededor de la columna
             ) {
-                Text("Top 5 Puntajes:", modifier = Modifier.padding(8.dp))
+                Text(
+                    text = "Top 5 Puntajes:",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Lista de puntajes
                 highScores.forEach { highScore ->
-                    Text(text = "$highScore", modifier = Modifier.padding(4.dp))
+                    Text(
+                        text = "$highScore",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(vertical = 4.dp) // Espacio entre cada puntaje
+                    )
                 }
             }
 
@@ -232,6 +247,7 @@ fun GameScreen(modifier: Modifier = Modifier) {
                     isGameOver = false
                 },
                 modifier = Modifier.align(Alignment.Center)
+
             ) {
                 Text("Reintentar")
             }
