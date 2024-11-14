@@ -91,23 +91,18 @@ fun GameScreen(modifier: Modifier = Modifier) {
             velocity += 0.5f
             birdY += velocity
 
-            // Limita la posición del pájaro entre el límite superior e inferior de la pantalla
             birdY = birdY.coerceIn(0f, screenHeight - birdHeight)
-
             obstacleX -= 5f
-            score += 1
 
-            // Reiniciar obstáculo cuando sale de la pantalla
+            // Incrementar puntaje solo si no es "Game Over"
+            if (!isGameOver) {
+                score += 1
+            }
+
             if (obstacleX < -obstacleWidth) {
-                obstacleX = screenWidth  // Usa el ancho de pantalla capturado
-
-                // Alterna entre obstáculo superior e inferior y aleatoriza su tamaño
-                if (Math.random() < 0.5) {
-                    obstacleY = 0f  // Obstáculo en la parte superior
-                } else {
-                    obstacleY = screenHeight - obstacleHeight  // Obstáculo en la parte inferior
-                }
-                obstacleHeight = (100..300).random().toFloat()  // Tamaño aleatorio
+                obstacleX = screenWidth
+                obstacleY = if (Math.random() < 0.5) 0f else screenHeight - obstacleHeight
+                obstacleHeight = (100..300).random().toFloat()
             }
         }
     }
@@ -134,38 +129,32 @@ fun GameScreen(modifier: Modifier = Modifier) {
                     }
                 }
         ) {
-            // Asigna el valor inicial de birdX solo una vez
             if (birdX == 0f) {
                 birdX = screenWidth / 2 - birdWidth / 2
             }
 
-            // Dibujar personaje con hitbox ajustada
             drawImage(
                 image = birdImage,
                 topLeft = Offset(x = birdX, y = birdY)
             )
 
-            // Dibuja la hitbox del pájaro con dimensiones ajustadas
             drawRect(
-                color = androidx.compose.ui.graphics.Color.Red,
+                color = Color.Red,
                 topLeft = Offset(birdX, birdY),
                 size = Size(birdWidth, birdHeight)
             )
 
-            // Dibujar obstáculo con hitbox ajustada
             drawImage(
                 image = obstacleImage,
                 topLeft = Offset(x = obstacleX, y = obstacleY)
             )
 
-            // Dibuja la hitbox del obstáculo alineada con la imagen
             drawRect(
-                color = androidx.compose.ui.graphics.Color.Blue,
+                color = Color.Blue,
                 topLeft = Offset(obstacleX, obstacleY),
                 size = Size(obstacleWidth, obstacleHeight)
             )
 
-            // Check de colisión con hitboxes
             if (checkCollision(
                     birdX = birdX,
                     birdY = birdY,
@@ -177,9 +166,11 @@ fun GameScreen(modifier: Modifier = Modifier) {
                     obstacleHeight = obstacleHeight
                 )
             ) {
-                isGameOver = true
-                db.insertScore(score)  // Guarda el puntaje al finalizar
-                highScores = db.getTopScores()  // Actualiza la lista de los 5 puntajes más altos
+                if (!isGameOver) {
+                    isGameOver = true
+                    db.insertScore(score)
+                    highScores = db.getTopScores()  // Actualizar los puntajes más altos
+                }
             }
 
             if (isGameOver) {
@@ -196,29 +187,27 @@ fun GameScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // Mostrar puntaje actual
         Text(
             text = "Puntaje: $score",
-            color = Color.White, // Cambia el color del texto
-            fontSize = 20.sp, // Tamaño de fuente más grande
-            fontWeight = FontWeight.Bold, // Texto en negrita
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(16.dp)
-                .shadow(4.dp, RoundedCornerShape(8.dp)) // Sombra para destacar el texto
-                .background(color = Color(0xFF6200EE), shape = RoundedCornerShape(8.dp)) // Fondo morado con esquinas redondeadas
-                .padding(horizontal = 16.dp, vertical = 8.dp) // Espacio interno
+                .shadow(4.dp, RoundedCornerShape(8.dp))
+                .background(color = Color(0xFF6200EE), shape = RoundedCornerShape(8.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        // Mostrar los 5 mejores puntajes al finalizar el juego
         if (isGameOver) {
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .padding(16.dp)
-                    .shadow(4.dp, RoundedCornerShape(8.dp)) // Sombra
-                    .background(color = Color(0xFF6200EE), shape = RoundedCornerShape(8.dp)) // Fondo morado con esquinas redondeadas
-                    .padding(16.dp) // Espacio interno alrededor de la columna
+                    .shadow(4.dp, RoundedCornerShape(8.dp))
+                    .background(color = Color(0xFF6200EE), shape = RoundedCornerShape(8.dp))
+                    .padding(16.dp)
             ) {
                 Text(
                     text = "Top 5 Puntajes:",
@@ -227,13 +216,12 @@ fun GameScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Lista de puntajes
                 highScores.forEach { highScore ->
                     Text(
                         text = "$highScore",
                         color = Color.White,
                         fontSize = 16.sp,
-                        modifier = Modifier.padding(vertical = 4.dp) // Espacio entre cada puntaje
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
             }
@@ -247,7 +235,6 @@ fun GameScreen(modifier: Modifier = Modifier) {
                     isGameOver = false
                 },
                 modifier = Modifier.align(Alignment.Center)
-
             ) {
                 Text("Reintentar")
             }
@@ -255,7 +242,6 @@ fun GameScreen(modifier: Modifier = Modifier) {
     }
 }
 
-// Función para verificar colisión de hitboxes
 fun checkCollision(
     birdX: Float,
     birdY: Float,
