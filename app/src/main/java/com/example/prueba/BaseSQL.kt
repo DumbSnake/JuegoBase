@@ -5,7 +5,6 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-// Clase para manejar la base de datos
 class GameDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -24,20 +23,58 @@ class GameDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         onCreate(db)
     }
 
-    // Insertar un nuevo puntaje y mantener solo los 5 mejores
     fun insertScore(points: Int) {
         val db = writableDatabase
-        val values = ContentValues().apply {
-            put(COLUMN_POINTS, points)
-        }
-        db.insert(TABLE_NAME, null, values)
 
-        // Llama a la función para eliminar puntajes extras y asegurar que solo queden los 5 mejores
-        deleteExtraScores(db)
+        if (isScoreInTop(points, db)) {
+            db.close()
+            return
+        }
+
+        val minTopScore = getLowestTopScore(db)
+
+        if (minTopScore == null || points > minTopScore) {
+            val values = ContentValues().apply {
+                put(COLUMN_POINTS, points)
+            }
+            db.insert(TABLE_NAME, null, values)
+            deleteExtraScores(db)
+        }
+
         db.close()
     }
 
-    // Elimina los puntajes adicionales, manteniendo solo los 5 mejores
+    private fun isScoreInTop(points: Int, db: SQLiteDatabase): Boolean {
+        val cursor = db.query(
+            TABLE_NAME,
+            arrayOf(COLUMN_POINTS),
+            "$COLUMN_POINTS = ?",
+            arrayOf(points.toString()),
+            null, null, null,
+            "5"
+        )
+        val exists = cursor.count > 0
+        cursor.close()
+        return exists
+    }
+
+    private fun getLowestTopScore(db: SQLiteDatabase): Int? {
+        val cursor = db.query(
+            TABLE_NAME,
+            arrayOf(COLUMN_POINTS),
+            null, null, null, null,
+            "$COLUMN_POINTS DESC",
+            "5"
+        )
+        var lowestTopScore: Int? = null
+        cursor.use {
+            if (it.moveToLast()) {
+                lowestTopScore = it.getInt(it.getColumnIndexOrThrow(COLUMN_POINTS))
+            }
+        }
+        return lowestTopScore
+    }
+
     private fun deleteExtraScores(db: SQLiteDatabase) {
         val excessScoresQuery = """
         DELETE FROM $TABLE_NAME 
@@ -47,11 +84,10 @@ class GameDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
             ORDER BY $COLUMN_POINTS DESC 
             LIMIT 5
         )
-    """.trimIndent()
+        """.trimIndent()
         db.execSQL(excessScoresQuery)
     }
 
-    // Obtener los 5 mejores puntajes
     fun getTopScores(limit: Int = 5): List<Int> {
         val scores = mutableListOf<Int>()
         val db = readableDatabase
@@ -59,10 +95,9 @@ class GameDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
             TABLE_NAME,
             arrayOf(COLUMN_POINTS),
             null, null, null, null,
-            "$COLUMN_POINTS DESC",  // Ordena los puntajes de mayor a menor
-            "$limit"                // Limita a los 5 primeros resultados
+            "$COLUMN_POINTS DESC",
+            "$limit"
         )
-
         cursor.use {
             while (it.moveToNext()) {
                 val score = it.getInt(it.getColumnIndexOrThrow(COLUMN_POINTS))
