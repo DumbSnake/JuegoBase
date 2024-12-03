@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "853541958134",
+    "project_id": "gatokl",
+    "storage_bucket": "gatokl.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:853541958134:android:46c141f61246f7e8e597d7",
+        "android_client_info": {
+          "package_name": "com.example.prueba"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "853541958134-qhplmjtk82d7ckbpgvvnsuv4evdgvqmb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.prueba",
+            "certificate_hash": "b6daed804941b320f17f14bfc4c742d11f37d0d0"
+          }
+        },
+        {
+          "client_id": "853541958134-0gpb8qntnj167dsuc8lmrorod5kc5o6s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWPAZcStCq-zJ6a6Z2LTPrGfb7YYzsSRQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "853541958134-0gpb8qntnj167dsuc8lmrorod5kc5o6s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
